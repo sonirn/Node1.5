@@ -332,6 +332,10 @@ async def purchase_node(purchase_data: NodePurchase, current_user: str = Depends
     
     nodes_collection.insert_one(node)
     
+    # Check if this is user's first purchase BEFORE updating status
+    user = users_collection.find_one({"_id": current_user})
+    is_first_purchase = not user.get("has_purchased_node", False)
+    
     # Update user status
     update_data = {"has_purchased_node": True}
     if purchase_data.node_id == "node4":
@@ -343,8 +347,7 @@ async def purchase_node(purchase_data: NodePurchase, current_user: str = Depends
     )
     
     # Validate referral if this is user's first purchase
-    user = users_collection.find_one({"_id": current_user})
-    if not user.get("has_purchased_node", False):
+    if is_first_purchase:
         referral = referrals_collection.find_one({"referred_user_id": current_user})
         if referral and not referral.get("is_valid", False):
             # Make referral valid and reward referrer
